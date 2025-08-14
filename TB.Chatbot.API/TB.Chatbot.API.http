@@ -1,0 +1,6 @@
+@TB.Chatbot.API_HostAddress = http://localhost:5189
+
+GET {{TB.Chatbot.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
