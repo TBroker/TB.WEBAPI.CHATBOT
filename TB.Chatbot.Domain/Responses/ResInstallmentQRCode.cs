@@ -60,5 +60,13 @@ namespace TB.Chatbot.Domain.Responses
         [JsonProperty("PHONE_NO")]
         [JsonPropertyName("phone_no")]
         public string? PhoneNo { get; set; }
+
+        [JsonProperty("AGENT_PHONE")]
+        [JsonPropertyName("agent_phone_number")]
+        public string? AgentPhone { get; set; }
+
+        [JsonProperty("AGENT_NAME")]
+        [JsonPropertyName("agent_name")]
+        public string? AgentName { get; set; }
     }
 }

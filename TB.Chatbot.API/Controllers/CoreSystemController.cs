@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TB.Chatbot.Application.Interfaces;
+using TB.Chatbot.Domain.Reponses;
 using TB.Chatbot.Domain.Requests;
 
 namespace TB.Chatbot.API.Controllers
