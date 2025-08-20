@@ -137,6 +137,7 @@ namespace TB.Chatbot.Application.Services
                 premiums.respCoverText = await _webDataRepository.GetDataCoverText(
                     new ReqCoverText
                     {
+                        premium_id = _reqPremium.id,
                         tm_product_code = premiums.tm_product_code,
                         company_code = premiums.company_code,
                         coverage_code = premiums.coverage_code
@@ -231,6 +232,12 @@ namespace TB.Chatbot.Application.Services
         {
             var results = await _webDataRepository.GetRewardPoint(reqUser);
             return await ResponseMessageContent(results, !string.IsNullOrEmpty(results.UserId));
+        }
+
+        public async Task<RespMessage> GetSubInsurance(ReqFilterCoverage request)
+        {
+            var results = await _webDataRepository.GetSubInsurance(request);
+            return await ResponseMessageContent(results, results.Any());
         }
 
         private async Task<RespMessage> ResponseMessageContent(object results, bool isContent, ApplicationType applicationType = ApplicationType.Query)

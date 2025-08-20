@@ -457,6 +457,11 @@ namespace TB.Chatbot.Infrastructure.Repositories
         {
             try
             {
+                var premium = _webTBrokerDBContext.WebPremiumsMotors.Where(w => w.id == Convert.ToInt32(reqCoverText.premium_id)).FirstOrDefault();
+                string od = Convert.ToDouble(premium.od?.ToString()).ToString("N0") ?? "";
+                string f_t = Convert.ToDouble(premium.f_t?.ToString()).ToString("N0") ?? "";
+                string s_p = Convert.ToDouble(premium.s_p?.ToString()).ToString("N0") ?? "";
+
                 var query = from m in _webTBrokerDBContext.WebMasterPlans
                             join c in _webTBrokerDBContext.WebProductCoverTxts on m.coverage_code equals c.coverage_code
                             where m.TM_PRODUCT_CODE!.Trim().Equals(reqCoverText.tm_product_code!)
@@ -505,8 +510,36 @@ namespace TB.Chatbot.Infrastructure.Repositories
                                 cover_val19 = m.cover_val19,
                                 cover_val20 = m.cover_val20,
                             };
-                var r = await query.FirstOrDefaultAsync();
-                return r!;
+
+                var results = await query.ToListAsync();
+
+                foreach (var coverage in results)
+                {
+                    for (int i = 1; i <= 20; i++)
+                    {
+                        var txtProp = typeof(RespCoverText).GetProperty($"cover_txt{i}");
+                        var valProp = typeof(RespCoverText).GetProperty($"cover_val{i}");
+                        var txtValue = txtProp?.GetValue(coverage)?.ToString();
+                        var valValue = valProp?.GetValue(coverage);
+
+                        // ปรับค่าความคุ้มครองตามตารางเบี้ย
+                        if (txtValue.Contains("- รถยนต์สูญหาย") && txtValue.Contains("ไฟไหม้"))
+                        {
+                            valValue = $"{ f_t } บาท";
+                        }
+                        else if (txtValue.Contains("- ความเสียหายต่อรถยนต์"))
+                        {
+                            valValue = $"{ od } บาท";
+                        }
+                        else if (txtValue.Contains("หมายเหตุ"))
+                        {
+                            valValue = string.Concat($"เพิ่มความคุ้มครองน้ำท่วม { s_p } บาท", valValue);
+                        }
+                        valProp?.SetValue(coverage, valValue);
+                    }
+                }
+
+                return results.FirstOrDefault();
             }
             catch (Exception ex)
             {
@@ -1048,6 +1081,51 @@ namespace TB.Chatbot.Infrastructure.Repositories
                         cmi_delivery_amount = commission.Commissions.cmi_delivery_amount.ToString("0.##"),
                     };
 
+                    string od = Convert.ToDouble(orderMotorPremiums.od?.ToString()).ToString("N0") ?? "-";
+                    string f_t = Convert.ToDouble(orderMotorPremiums.f_t?.ToString()).ToString("N0") ?? "-";
+                    string s_p = Convert.ToDouble(orderMotorPremiums.s_p?.ToString()).ToString("N0") ?? "-";
+
+                    if (orderMotorPremiums.coverage_code == "2.1" || orderMotorPremiums.coverage_code == "3.1")
+                    {
+                        for (int index = 1; index <= 20; index++)
+                        {
+                            string coverTxt = orderMotorPremiums.GetType().GetProperty($"cover_txt{index}")?.GetValue(orderMotorPremiums) as string ?? "";
+                            string coverVal = orderMotorPremiums.GetType().GetProperty($"cover_val{index}")?.GetValue(orderMotorPremiums) as string ?? "";
+                            string enCoverTxt = orderMotorPremiums.GetType().GetProperty($"en_cover_txt{index}")?.GetValue(orderMotorPremiums) as string ?? "";
+                            string enCoverVal = orderMotorPremiums.GetType().GetProperty($"en_cover_val{index}")?.GetValue(orderMotorPremiums) as string ?? "";
+
+                            // ปรับค่าความคุ้มครองตามตารางเบี้ย
+                            if (coverTxt.Contains("- รถยนต์สูญหาย") && coverTxt.Contains("ไฟไหม้"))
+                            {
+                                coverVal = $"{f_t} บาท";
+                            }
+                            else if (coverTxt.Contains("- ความเสียหายต่อรถยนต์"))
+                            {
+                                coverVal = $"{od} บาท";
+                            }
+                            else if (coverTxt.Contains("หมายเหตุ"))
+                            {
+                                coverVal = string.Concat($"เพิ่มความคุ้มครองน้ำท่วม {s_p} บาท", coverVal);
+                            }
+
+                            if (enCoverTxt.Contains("- รถยนต์สูญหาย") && enCoverTxt.Contains("ไฟไหม้"))
+                            {
+                                enCoverVal = $"{f_t} บาท";
+                            }
+                            else if (enCoverTxt.Contains("- ความเสียหายต่อรถยนต์"))
+                            {
+                                enCoverVal = $"{od} บาท";
+                            }
+                            else if (enCoverTxt.Contains("หมายเหตุ"))
+                            {
+                                enCoverVal = string.Concat($"เพิ่มความคุ้มครองน้ำท่วม {s_p} บาท", coverVal);
+                            }
+
+                            orderMotorPremiums.GetType().GetProperty($"cover_val{index}")?.SetValue(orderMotorPremiums, coverVal);
+                            orderMotorPremiums.GetType().GetProperty($"en_cover_val{index}")?.SetValue(orderMotorPremiums, enCoverVal);
+                        }
+                    }
+
                     listOrderMotorPremiums.Add(orderMotorPremiums);
                 }
 
@@ -1181,9 +1259,41 @@ namespace TB.Chatbot.Infrastructure.Repositories
             }
         }
 
-        public async Task GetSubInsurance(ReqFilterCoverage request)
+        public async Task<IEnumerable<RespSubInsure>> GetSubInsurance(ReqFilterCoverage request)
         {
+            var result = await _webTBrokerDBContext.WebPremiumsMotors
+                .Where(w => w.status == "A"
+                    && w.car_brand!.ToUpper().Trim() == request.car_brand!.ToUpper().Trim()
+                    && w.car_model!.ToUpper().Trim() == request.car_model!.ToUpper().Trim()
+                    && w.car_engine_size!.ToUpper().Trim() == request.car_engine_size!.ToUpper().Trim()
+                    && w.car_year!.Trim() == request.car_year!.Trim()
+                    && w.coverage_code != "T"
+                    && w.coverage_code == request.coverage_code
+                ).Select(s => new RespSubInsure
+                {
+                    od = s.od == null ? "" : s.od,
+                    f_t = s.f_t == null ? "" : s.f_t,
+                    s_p = s.s_p == null ? "" : s.s_p
+                }).Distinct().ToListAsync();
 
+            if (request.od != "")
+            {
+                result = result.Where(w => w.od == request.od).ToList();
+            }
+
+            if (request.f_t != "")
+            {
+                result = result.Where(w => w.f_t == request.f_t).ToList();
+            }
+
+            if (request.s_p != "")
+            {
+                result = result.Where(w => w.s_p == request.s_p).ToList();
+            }
+
+            return result;
+
+            /*
             var resultSi = await (from pm in _webTBrokerDBContext.WebPremiumsMotors
                                   join mp in _webTBrokerDBContext.WebMasterPlans on
                                   new { pm.company_code, pm.TM_PRODUCT_CODE, pm.effective_date, pm.expire_date }
@@ -1247,8 +1357,7 @@ namespace TB.Chatbot.Infrastructure.Repositories
                         .GroupBy(g => g.s_p)
                         .Select(s => new { s_p = s.Key })
                         .ToListAsync();
+            */
         }
-
-
     }
 }

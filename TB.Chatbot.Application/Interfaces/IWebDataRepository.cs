@@ -41,5 +41,7 @@ namespace TB.Chatbot.Application.Interfaces
         Task<RespAddOrderMotor> InsertOrderMotor(ReqOrderMotor reqOrderMotor);
 
         Task<RespReward> GetRewardPoint(ReqUser reqUser);
+
+        Task<IEnumerable<RespSubInsure>> GetSubInsurance(ReqFilterCoverage request);
     }
 }
