@@ -114,6 +114,12 @@ namespace TB.Chatbot.API.Controllers
             return Ok(await _webDataService.GetRewardPoint(reqUser));
         }
 
+        [HttpPost("api/data/subinsurance")]
+        public async Task<IActionResult> GetSubInsurance([FromBody] ReqFilterCoverage request)
+        {
+            return Ok(await _webDataService.GetSubInsurance(request));
+        }
+
         #endregion ######### Data #########
 
         #region ######### Command #########

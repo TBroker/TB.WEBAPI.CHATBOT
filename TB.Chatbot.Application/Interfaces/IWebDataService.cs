@@ -39,6 +39,8 @@ namespace TB.Chatbot.Application.Interfaces
 
         Task<RespMessage> GetRewardPoint(ReqUser reqUser);
 
+        Task<RespMessage> GetSubInsurance(ReqFilterCoverage request);
+
         Task<RespMessage> InsertQuotations(ReqOrderMotor reqOrderMotor);
     }
 }

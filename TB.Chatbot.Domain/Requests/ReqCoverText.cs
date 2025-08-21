@@ -2,6 +2,7 @@
 {
     public class ReqCoverText
     {
+        public string? premium_id { get; set; }
         public string? tm_product_code { get; set; }
         public string? company_code { get; set; }
         public string? coverage_code { get; set; }
