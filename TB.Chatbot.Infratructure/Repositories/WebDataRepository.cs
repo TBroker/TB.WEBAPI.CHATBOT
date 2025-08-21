@@ -1259,7 +1259,7 @@ namespace TB.Chatbot.Infrastructure.Repositories
             }
         }
 
-        public async Task<IEnumerable<RespSubInsure>> GetSubInsurance(ReqFilterCoverage request)
+        public async Task<RespSubInsure> GetSubInsurance(ReqFilterCoverage request)
         {
             var result = await _webTBrokerDBContext.WebPremiumsMotors
                 .Where(w => w.status == "A"
@@ -1269,29 +1269,43 @@ namespace TB.Chatbot.Infrastructure.Repositories
                     && w.car_year!.Trim() == request.car_year!.Trim()
                     && w.coverage_code != "T"
                     && w.coverage_code == request.coverage_code
-                ).Select(s => new RespSubInsure
+                ).Select(s => new {
+                    sum_insure = s.sum_insure ?? "",
+                    od = s.od ?? "",
+                    f_t = s.f_t ?? "",
+                    s_p = s.s_p ?? ""
+                }).ToListAsync();
+
+            if (request.coverage_code == "1" || request.coverage_code == "2" || request.coverage_code == "3")
+            {
+                return new RespSubInsure
                 {
-                    od = s.od == null ? "" : s.od,
-                    f_t = s.f_t == null ? "" : s.f_t,
-                    s_p = s.s_p == null ? "" : s.s_p
-                }).Distinct().ToListAsync();
-
-            if (request.od != "")
+                    sum_insure = result.Select(s => s.sum_insure).OrderBy(o => o).Distinct().ToArray()
+                };
+            } 
+            else
             {
-                result = result.Where(w => w.od == request.od).ToList();
-            }
+                if (request.od != "")
+                {
+                    result = result.Where(w => w.od == request.od).ToList();
+                }
 
-            if (request.f_t != "")
-            {
-                result = result.Where(w => w.f_t == request.f_t).ToList();
-            }
+                if (request.f_t != "")
+                {
+                    result = result.Where(w => w.f_t == request.f_t).ToList();
+                }
 
-            if (request.s_p != "")
-            {
-                result = result.Where(w => w.s_p == request.s_p).ToList();
-            }
+                if (request.s_p != "")
+                {
+                    result = result.Where(w => w.s_p == request.s_p).ToList();
+                }
 
-            return result;
+                var response = new RespSubInsure();
+                response.od = result.Select(s => s.od).OrderBy(o => o).Distinct().ToArray();
+                response.f_t = result.Select(s => s.f_t).OrderBy(o => o).Distinct().ToArray();
+                response.s_p = result.Select(s => s.s_p).OrderBy(o => o).Distinct().ToArray();
+                return response;
+            }
 
             /*
             var resultSi = await (from pm in _webTBrokerDBContext.WebPremiumsMotors

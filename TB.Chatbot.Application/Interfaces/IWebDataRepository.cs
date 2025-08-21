@@ -42,6 +42,6 @@ namespace TB.Chatbot.Application.Interfaces
 
         Task<RespReward> GetRewardPoint(ReqUser reqUser);
 
-        Task<IEnumerable<RespSubInsure>> GetSubInsurance(ReqFilterCoverage request);
+        Task<RespSubInsure> GetSubInsurance(ReqFilterCoverage request);
     }
 }
