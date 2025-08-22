@@ -525,15 +525,15 @@ namespace TB.Chatbot.Infrastructure.Repositories
                         // ปรับค่าความคุ้มครองตามตารางเบี้ย
                         if (txtValue.Contains("- รถยนต์สูญหาย") && txtValue.Contains("ไฟไหม้"))
                         {
-                            valValue = $"{ f_t } บาท";
+                            valValue = $"{f_t} บาท";
                         }
                         else if (txtValue.Contains("- ความเสียหายต่อรถยนต์"))
                         {
-                            valValue = $"{ od } บาท";
+                            valValue = $"{od} บาท";
                         }
                         else if (txtValue.Contains("หมายเหตุ"))
                         {
-                            valValue = string.Concat($"เพิ่มความคุ้มครองน้ำท่วม { s_p } บาท", valValue);
+                            valValue = string.Concat($"เพิ่มความคุ้มครองน้ำท่วม {s_p} บาท", valValue);
                         }
                         valProp?.SetValue(coverage, valValue);
                     }
@@ -1269,11 +1269,12 @@ namespace TB.Chatbot.Infrastructure.Repositories
                     && w.car_year!.Trim() == request.car_year!.Trim()
                     && w.coverage_code != "T"
                     && w.coverage_code == request.coverage_code
-                ).Select(s => new {
-                    sum_insure = s.sum_insure ?? "",
-                    od = s.od ?? "",
-                    f_t = s.f_t ?? "",
-                    s_p = s.s_p ?? ""
+                ).Select(s => new
+                {
+                    sum_insure = string.IsNullOrEmpty(s.sum_insure) ? 0 : Convert.ToInt32(s.sum_insure),
+                    od = string.IsNullOrEmpty(s.od) ? 0 : Convert.ToInt32(s.od),
+                    f_t = string.IsNullOrEmpty(s.f_t) ? 0 : Convert.ToInt32(s.f_t),
+                    s_p = string.IsNullOrEmpty(s.s_p) ? 0 : Convert.ToInt32(s.s_p)
                 }).ToListAsync();
 
             if (request.coverage_code == "1" || request.coverage_code == "2" || request.coverage_code == "3")
@@ -1282,96 +1283,33 @@ namespace TB.Chatbot.Infrastructure.Repositories
                 {
                     sum_insure = result.Select(s => s.sum_insure).OrderBy(o => o).Distinct().ToArray()
                 };
-            } 
+            }
             else
             {
-                if (request.od != "")
+                if (request.od != 0)
                 {
                     result = result.Where(w => w.od == request.od).ToList();
                 }
 
-                if (request.f_t != "")
+                if (request.f_t != 0)
                 {
                     result = result.Where(w => w.f_t == request.f_t).ToList();
                 }
 
-                if (request.s_p != "")
+                if (request.s_p != 0)
                 {
                     result = result.Where(w => w.s_p == request.s_p).ToList();
                 }
 
-                var response = new RespSubInsure();
-                response.od = result.Select(s => s.od).OrderBy(o => o).Distinct().ToArray();
-                response.f_t = result.Select(s => s.f_t).OrderBy(o => o).Distinct().ToArray();
-                response.s_p = result.Select(s => s.s_p).OrderBy(o => o).Distinct().ToArray();
+                var response = new RespSubInsure
+                {
+                    sum_insure = [],
+                    od = result.Select(s => s.od).OrderBy(o => o).Distinct().ToArray(),
+                    f_t = result.Select(s => s.f_t).OrderBy(o => o).Distinct().ToArray(),
+                    s_p = result.Select(s => s.s_p).OrderBy(o => o).Distinct().ToArray()
+                };
                 return response;
             }
-
-            /*
-            var resultSi = await (from pm in _webTBrokerDBContext.WebPremiumsMotors
-                                  join mp in _webTBrokerDBContext.WebMasterPlans on
-                                  new { pm.company_code, pm.TM_PRODUCT_CODE, pm.effective_date, pm.expire_date }
-                                  equals
-                                  new { company_code = mp.pb_company_code, TM_PRODUCT_CODE = mp.pb_TM_PRODUCT_CODE, effective_date = mp.pb_effective_date, expire_date = mp.pb_expire_date }
-                                  where pm.status == "A"
-                                      && pm.car_brand!.ToUpper().Trim() == request.car_brand!.ToUpper().Trim()
-                                      && pm.car_model!.ToUpper().Trim() == request.car_model!.ToUpper().Trim()
-                                      && pm.car_engine_size!.Trim() == request.car_engine_size!.Trim()
-                                      && pm.car_year!.Trim() == request.car_year!.Trim()
-                                      && pm.coverage_code != "T"
-                                      && pm.coverage_code == request.coverage_code
-                                      && mp.status == 1
-                                      && mp.show_front == 1
-                                  group pm by pm.sum_insure into g
-                                  select new { sub_insure = g.Key }
-                                  )
-                                  .ToListAsync();
-
-            //od
-            var resultOd = await _webTBrokerDBContext.WebPremiumsMotors
-                        .Where(w => w.status == "A"
-                           && w.car_brand!.ToUpper().Trim() == request.car_brand!.ToUpper().Trim()
-                           && w.car_model!.ToUpper().Trim() == request.car_model!.ToUpper().Trim()
-                           && w.car_engine_size!.Trim() == request.car_engine_size!.Trim()
-                           && w.car_year!.Trim() == request.car_year!.Trim()
-                           && w.coverage_code != "T"
-                           && w.coverage_code == request.coverage_code!.Trim()
-                           )
-                       .GroupBy(g => g.od)
-                       .Select(s => new { od = s.Key })
-                       .ToListAsync();
-
-            //f_t
-            var resultFt = await _webTBrokerDBContext.WebPremiumsMotors
-                        .Where(w => w.status == "A"
-                            && w.car_brand!.ToUpper().Trim() == request.car_brand!.ToUpper().Trim()
-                            && w.car_model!.ToUpper().Trim() == request.car_model!.ToUpper().Trim()
-                            && w.car_engine_size!.Trim() == request.car_engine_size!.Trim()
-                            && w.car_year!.Trim() == request.car_year!.Trim()
-                            && w.coverage_code != "T"
-                            && w.coverage_code == request.coverage_code
-                            && (w.od ?? "") == request.od
-                        )
-                        .GroupBy(g => g.f_t)
-                        .Select(s => new { f_t = s.Key })
-                        .ToListAsync();
-
-            //s_p
-            var resultSp = await _webTBrokerDBContext.WebPremiumsMotors
-                        .Where(w => w.status == "A"
-                            && w.car_brand!.ToUpper().Trim() == request.car_brand!.ToUpper().Trim()
-                            && w.car_model!.ToUpper().Trim() == request.car_model!.ToUpper().Trim()
-                            && w.car_engine_size!.Trim() == request.car_engine_size!.Trim()
-                            && w.car_year!.Trim() == request.car_year!.Trim()
-                            && w.coverage_code != "T"
-                            && w.coverage_code == request.coverage_code
-                            && (w.od ?? "") == request.od
-                            && (w.f_t ?? "") == request.f_t
-                        )
-                        .GroupBy(g => g.s_p)
-                        .Select(s => new { s_p = s.Key })
-                        .ToListAsync();
-            */
         }
     }
 }

@@ -2,9 +2,9 @@
 {
     public class RespSubInsure
     {
-        public string[]? sum_insure { get; set; }
-        public string[]? od { get; set; }
-        public string[]? f_t { get; set; }
-        public string[]? s_p { get; set; }
+        public IEnumerable<int>? sum_insure { get; set; }
+        public IEnumerable<int>? od { get; set; }
+        public IEnumerable<int>? f_t { get; set; }
+        public IEnumerable<int>? s_p { get; set; }
     }
 }
