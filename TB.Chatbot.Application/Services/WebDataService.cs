@@ -237,7 +237,7 @@ namespace TB.Chatbot.Application.Services
         public async Task<RespMessage> GetSubInsurance(ReqFilterCoverage request)
         {
             var results = await _webDataRepository.GetSubInsurance(request);
-            return await ResponseMessageContent(results, results.Any());
+            return await ResponseMessageContent(results, results != null);
         }
 
         private async Task<RespMessage> ResponseMessageContent(object results, bool isContent, ApplicationType applicationType = ApplicationType.Query)
